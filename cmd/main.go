@@ -3,26 +3,26 @@ package main
 import (
 	"log"
 	"net/http"
-	http2 "validator/internal/controllers/http"
+
+	"validator/internal/promocode/adapters"
+	"validator/internal/promocode/controllers"
+	"validator/internal/promocode/usecase"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-
-	"validator/internal/adapters/postgres"
-	"validator/internal/promocodes/code_validation"
 )
 
 func main() {
-	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+	router := chi.NewRouter()
+	router.Use(middleware.Logger)
 
-	repo := postgres.New()
-	usecase := code_validation.NewUsecase(repo)
-	Handler := http2.NewHandler(usecase)
+	promocodeRepo := adapters.NewPgPromoRepo()
+	promocodeUc := usecase.New(promocodeRepo)
+	promocodeHandler := controllers.New(promocodeUc)
 
 	// GET /code/{id}
-	r.Get("/code/{id}", Handler.PromocodeValidation)
+	router.Get("/valid_code/{promocode}", promocodeHandler.ValidateCode)
 
 	log.Println("Server start...")
-	http.ListenAndServe(":8080", r)
+	http.ListenAndServe(":8080", router)
 }
