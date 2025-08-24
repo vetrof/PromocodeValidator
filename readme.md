@@ -1,4 +1,4 @@
-Вот тебе нормальное описание для `README.md` репозитория:
+
 
 ````markdown
 # PromocodeValidator

@@ -10,6 +10,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	memberPostgres "validator/internal/member/adapters"
+	memberHandler "validator/internal/member/controllers"
+	memberUc "validator/internal/member/usecase"
 )
 
 func main() {
@@ -20,8 +23,14 @@ func main() {
 	promocodeUc := usecase.New(promocodeRepo)
 	promocodeHandler := controllers.New(promocodeUc)
 
+	memberRepo := memberPostgres.New()
+	memberUc := memberUc.New(memberRepo)
+	memberHandler := memberHandler.New(memberUc)
+
 	// GET /code/{id}
 	router.Get("/valid_code/{promocode}", promocodeHandler.ValidateCode)
+	// GET /member_ex/{id}
+	router.Get("/member_ex/{id}", memberHandler.UserExist)
 
 	log.Println("Server start...")
 	http.ListenAndServe(":8080", router)
