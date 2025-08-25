@@ -76,3 +76,28 @@ func (h *Handler) StrongValidationToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 }
+
+func (h *Handler) NonStrongValidationToken(w http.ResponseWriter, r *http.Request) {
+
+	user, ok := middleware.UserFromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	fmt.Println("user --->>> ", user)
+
+	result := "yohoho"
+	response := dto.Output{Username: result}
+	w.Header().Set("Content-Type", "application/json")
+
+	// Кодируем структуру `response` в JSON и записываем результат
+	// напрямую в `http.ResponseWriter`.
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		// Если произошла ошибка при кодировании JSON,
+		// возвращаем внутреннюю ошибку сервера.
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		log.Printf("Failed to encode JSON response: %v", err)
+		return
+	}
+}

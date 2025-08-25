@@ -41,64 +41,90 @@ func NewAuth(secret, issuer, audience string) *Auth {
 	}
 }
 
-// Middleware — строгая авторизация: требует валидный Bearer JWT
-func (a *Auth) Middleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tok, err := bearerToken(r.Header.Get("Authorization"))
-		if err != nil {
-			http.Error(w, "missing or malformed Authorization header", http.StatusUnauthorized)
-			return
-		}
-
-		claims := &Claims{}
-		token, err := jwt.ParseWithClaims(tok, claims, func(t *jwt.Token) (interface{}, error) {
-			// разрешаем только HMAC (HS256/384/512)
-			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %T", t.Method)
-			}
-			return a.secret, nil
-		})
-		if err != nil || !token.Valid {
-			http.Error(w, "invalid token", http.StatusUnauthorized)
-			return
-		}
-
-		// *** ВАЖНО: ручные проверки вместо несуществующих VerifyIssuer/VerifyAudience ***
-		// issuer
-		if a.issuer != "" && claims.Issuer != a.issuer {
-			http.Error(w, "invalid token issuer", http.StatusUnauthorized)
-			return
-		}
-		// audience
-		if a.audience != "" {
-			found := false
-			for _, aud := range claims.Audience {
-				if aud == a.audience {
-					found = true
-					break
+// Middleware — авторизация JWT.
+// Если optional == false — токен обязателен (401 при ошибке).
+// Если optional == true  — токен опционален (если есть и валиден, кладём User в ctx).
+func (a *Auth) Middleware(optional bool) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			tok, _ := bearerToken(r.Header.Get("Authorization"))
+			if tok == "" {
+				if optional {
+					next.ServeHTTP(w, r) // токена нет — идём дальше без User
+					return
 				}
-			}
-			if !found {
-				http.Error(w, "invalid token audience", http.StatusUnauthorized)
+				http.Error(w, "missing or malformed Authorization header", http.StatusUnauthorized)
 				return
 			}
-		}
-		// expiration
-		if claims.ExpiresAt != nil && claims.ExpiresAt.Time.Before(time.Now()) {
-			http.Error(w, "token expired", http.StatusUnauthorized)
-			return
-		}
 
-		uid := claims.Subject
-		if uid == "" {
-			http.Error(w, "missing subject (user id)", http.StatusUnauthorized)
-			return
-		}
+			claims := &Claims{}
+			token, err := jwt.ParseWithClaims(tok, claims, func(t *jwt.Token) (interface{}, error) {
+				if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+					return nil, fmt.Errorf("unexpected signing method: %T", t.Method)
+				}
+				return a.secret, nil
+			})
+			if err != nil || !token.Valid {
+				if optional {
+					next.ServeHTTP(w, r) // битый токен — идём дальше без User
+					return
+				}
+				http.Error(w, "invalid token", http.StatusUnauthorized)
+				return
+			}
 
-		user := &User{ID: uid, Roles: claims.Roles}
-		ctx := context.WithValue(r.Context(), userCtxKey, user)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+			// issuer
+			if a.issuer != "" && claims.Issuer != a.issuer {
+				if !optional {
+					http.Error(w, "invalid token issuer", http.StatusUnauthorized)
+					return
+				}
+				next.ServeHTTP(w, r)
+				return
+			}
+			// audience
+			if a.audience != "" {
+				found := false
+				for _, aud := range claims.Audience {
+					if aud == a.audience {
+						found = true
+						break
+					}
+				}
+				if !found {
+					if !optional {
+						http.Error(w, "invalid token audience", http.StatusUnauthorized)
+						return
+					}
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
+			// expiration
+			if claims.ExpiresAt != nil && claims.ExpiresAt.Time.Before(time.Now()) {
+				if !optional {
+					http.Error(w, "token expired", http.StatusUnauthorized)
+					return
+				}
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			uid := claims.Subject
+			if uid == "" {
+				if !optional {
+					http.Error(w, "missing subject (user id)", http.StatusUnauthorized)
+					return
+				}
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			user := &User{ID: uid, Roles: claims.Roles}
+			ctx := context.WithValue(r.Context(), userCtxKey, user)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }
 
 // UserFromContext — получить User в контроллере

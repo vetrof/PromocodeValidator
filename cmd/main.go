@@ -56,10 +56,16 @@ func main() {
 	router.Get("/valid_code/{promocode}", promocodeHandler.ValidateCode)
 	router.Get("/member_ex/{id}", memberHandler.UserExist)
 
-	// защищённые эндпоинты
+	// строгая аутентификация (токен обязателен)
 	router.Group(func(r chi.Router) {
-		r.Use(auth.Middleware)
+		r.Use(auth.Middleware(false))
 		r.Get("/strong_auth/", memberHandler.StrongValidationToken)
+	})
+
+	// мягкая аутентификация (токен можно, но не обязателен)
+	router.Group(func(r chi.Router) {
+		r.Use(auth.Middleware(true))
+		r.Get("/maybe_auth", memberHandler.NonStrongValidationToken)
 	})
 
 	log.Println("Server start on :8080 ...")
