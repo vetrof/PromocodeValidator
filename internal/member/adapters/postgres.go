@@ -1,11 +1,16 @@
 package adapters
 
-import "errors"
+import (
+	"database/sql"
+	"errors"
+)
 
-type Postgres struct{}
+type Postgres struct {
+	db *sql.DB
+}
 
-func New() *Postgres {
-	return &Postgres{}
+func New(db *sql.DB) *Postgres {
+	return &Postgres{db: db}
 }
 
 func (p *Postgres) Exist(id int) (string, error) {

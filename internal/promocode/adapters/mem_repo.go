@@ -2,6 +2,7 @@ package adapters
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"validator/internal/promocode/domain"
 )
@@ -10,9 +11,10 @@ import (
 // На деле хранит моканные данные в map, имитируя таблицу promo_codes.
 type PgPromoRepo struct {
 	data map[string]*domain.PromoCode
+	db   *sql.DB
 }
 
-func NewPgPromoRepo() *PgPromoRepo {
+func NewPgPromoRepo(db *sql.DB) *PgPromoRepo {
 	return &PgPromoRepo{
 		data: map[string]*domain.PromoCode{
 			"HELLO":   {Code: "HELLO", Valid: true, Used: false},
@@ -20,6 +22,7 @@ func NewPgPromoRepo() *PgPromoRepo {
 			"EXPIRED": {Code: "EXPIRED", Valid: false, Used: false},
 			"NEWYEAR": {Code: "NEWYEAR", Valid: true, Used: false},
 		},
+		db: db,
 	}
 }
 
