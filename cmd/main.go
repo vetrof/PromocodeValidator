@@ -4,7 +4,9 @@ import (
 	"log"
 	"net/http"
 	"validator/config"
+	"validator/pkg/middleware"
 	"validator/pkg/postgres"
+	"validator/pkg/token"
 
 	"validator/internal/promocode/adapters"
 	"validator/internal/promocode/controllers"
@@ -15,7 +17,7 @@ import (
 	memberUc "validator/internal/member/usecase"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 )
 
 func main() {
@@ -29,8 +31,16 @@ func main() {
 	}
 
 	router := chi.NewRouter()
-	router.Use(middleware.Logger)
+	router.Use(chiMiddleware.Logger)
 
+	// auth middleware
+	auth := middleware.NewAuth(cfg.JWT.Secret, cfg.JWT.Issuer, cfg.JWT.Audience)
+
+	// token generator + handler
+	tokenGen := token.New(cfg.JWT.Secret, cfg.JWT.Issuer, cfg.JWT.Audience)
+	tokenHandler := token.NewHandler(tokenGen)
+
+	// юзкейсы и хендлеры
 	promocodeRepo := adapters.NewPgPromoRepo(db)
 	promocodeUc := usecase.New(promocodeRepo)
 	promocodeHandler := controllers.New(promocodeUc)
@@ -39,11 +49,19 @@ func main() {
 	memberUc := memberUc.New(memberRepo)
 	memberHandler := memberHandler.New(memberUc)
 
-	// GET /code/{id}
+	// эндпоинт для получения токена
+	router.Post("/login", tokenHandler.Login)
+
+	// публичные эндпоинты
 	router.Get("/valid_code/{promocode}", promocodeHandler.ValidateCode)
-	// GET /member_ex/{id}
 	router.Get("/member_ex/{id}", memberHandler.UserExist)
 
-	log.Println("Server start...")
+	// защищённые эндпоинты
+	router.Group(func(r chi.Router) {
+		r.Use(auth.Middleware)
+		r.Get("/strong_auth/", memberHandler.StrongValidationToken)
+	})
+
+	log.Println("Server start on :8080 ...")
 	http.ListenAndServe(":8080", router)
 }

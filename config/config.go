@@ -6,6 +6,12 @@ import (
 	"strconv"
 )
 
+type JWTConfig struct {
+	Secret   string
+	Issuer   string
+	Audience string
+}
+
 type PostgresConfig struct {
 	Host     string
 	Port     int
@@ -17,6 +23,7 @@ type PostgresConfig struct {
 
 type Config struct {
 	Postgres PostgresConfig
+	JWT      JWTConfig
 }
 
 func Load() Config {
@@ -30,6 +37,11 @@ func Load() Config {
 			Password: getEnv("DB_PASSWORD", "secret"),
 			DBName:   getEnv("DB_NAME", "app"),
 			SSLMode:  getEnv("DB_SSLMODE", "disable"),
+		},
+		JWT: JWTConfig{
+			Secret:   getEnv("JWT_SECRET", "dev-secret-change-me"),
+			Issuer:   os.Getenv("JWT_ISS"), // можно оставить пустым
+			Audience: os.Getenv("JWT_AUD"),
 		},
 	}
 }
