@@ -5,7 +5,6 @@ type ValidateInput struct {
 }
 
 type ValidateOutput struct {
-	Valid   bool   `json:"valid"`
-	Error   string `json:"error,omitempty"`
-	Success bool   `json:"success"`
+	Code  string `json:"code"`
+	Valid bool   `json:"valid"`
 }

@@ -1,0 +1,25 @@
+### 1. Получение токена
+POST http://localhost:8080/login
+Content-Type: application/json
+
+{
+  "login": "admin",
+  "password": "secret"
+}
+
+> {%
+    // Сохраняем токен в переменную, чтобы использовать в следующем запросе
+    var body = response.body;
+    var data = JSON.parse(body);
+    client.global.set("authToken", data.token);  // предполагаем, что сервер вернул { "token": "..." }
+%}
+
+### 2. Защищённый запрос с токеном
+GET http://localhost:8080/strong_auth/
+Authorization: Bearer {{authToken}}
+
+> {%
+    client.test("Protected endpoint returns 200", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}

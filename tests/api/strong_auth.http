@@ -1,0 +1,41 @@
+### Validation token
+GET http://localhost:8080/secure/valid_code/bob
+Accept: application/json
+Authorization: Bearer 12345
+
+> {%
+    client.test("must return 401", function() {
+        client.assert(response.status === 401, "Response status is not 401");
+        // client.assert(response.body.code === "bob", "Code should be 'bob'");
+        // client.assert(response.body.valid === true, "valid should be 'true'");
+    });
+%}
+
+### get token
+POST http://localhost:8080/login
+Content-Type: application/json
+
+{
+  "login": "admin",
+  "password": "secret"
+}
+
+> {%
+    // Сохраняем токен в переменную, чтобы использовать в следующем запросе
+    var body = response.body;
+    var data = JSON.parse(body);
+    client.global.set("authToken", data.token);  // предполагаем, что сервер вернул { "token": "..." }
+%}
+
+### again
+GET http://localhost:8080/secure/valid_code/bob
+Accept: application/json
+Authorization: Bearer {{authToken}}
+
+> {%
+    client.test("must return 200", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        // client.assert(response.body.code === "bob", "Code should be 'bob'");
+        // client.assert(response.body.valid === true, "valid should be 'true'");
+    });
+%}

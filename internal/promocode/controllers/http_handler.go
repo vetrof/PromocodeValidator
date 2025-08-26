@@ -20,17 +20,18 @@ func New(uc *usecase.ValidatePromoUsecase) *Handler {
 	return &Handler{uc: uc}
 }
 
+// handler.go
 func (h *Handler) ValidateCode(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	promocode := chi.URLParam(r, "promocode")
+	code := chi.URLParam(r, "promocode")
 
-	output := h.uc.Validate(ctx, dto.ValidateInput{Code: promocode})
-
-	if !output.Success {
-		w.WriteHeader(http.StatusBadRequest)
-	}
-
-	_ = json.NewEncoder(w).Encode(output)
+	out, _ := h.uc.Validate(ctx, dto.ValidateInput{Code: code})
+	//if err != nil {
+	//	http.Error(w, err.Error(), http.StatusNotFound)
+	//	return
+	//}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(out)
 }
 
 //func (h *Handler) ApplyCode(w http.ResponseWriter, r *http.Request) {
