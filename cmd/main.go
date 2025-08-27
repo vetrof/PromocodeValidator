@@ -1,4 +1,4 @@
-// todo Дописать регистрацию промокода
+// todo Дописать применение промокода
 
 package main
 
@@ -6,10 +6,10 @@ import (
 	"log"
 	"net/http"
 	"validator/config"
-	"validator/internal/adapters/fake"
-	"validator/internal/promocodes/valid_code"
-	"validator/pkg/middleware"
-	"validator/pkg/postgres"
+	"validator/internal/adapters/postgres/fake"
+	"validator/internal/app/promocodes/apply_code"
+	"validator/internal/app/promocodes/valid_code"
+	"validator/internal/controllers"
 	"validator/pkg/token"
 
 	"github.com/go-chi/chi/v5"
@@ -21,39 +21,32 @@ func main() {
 	cfg := config.Load()
 
 	// create db connection
-	db, err := postgres.NewConnection(cfg.Postgres)
-	if err != nil {
-		log.Fatal(err)
-	}
+	//db, err := postgres.NewConnection(cfg.Postgres)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
 
+	// create repo
+	postgresRepo := fake.NewFakePostgres()
+
+	// main router
 	router := chi.NewRouter()
 	router.Use(chiMiddleware.Logger)
 
-	// auth middleware
-	auth := middleware.NewAuth(cfg.JWT.Secret, cfg.JWT.Issuer, cfg.JWT.Audience)
-
-	// token generator + handler
+	// token generator
 	tokenGen := token.New(cfg.JWT.Secret, cfg.JWT.Issuer, cfg.JWT.Audience)
 	tokenHandler := token.NewHandler(tokenGen)
-
-	// юзкейсы и хендлеры
-	//promocodeRepo := adapters.NewPgPromoRepo(db)
-	promocodeRepo := fake.NewPgPromoRepo(db)
-	promocodeUc := valid_code.NewUseCase(promocodeRepo)
-	promocodeHandler := valid_code.NewHandler(promocodeUc)
-
-	// эндпоинт для получения токена
 	router.Post("/login", tokenHandler.Login)
 
-	// публичные эндпоинты
-	router.Get("/valid_code/{promocode}", promocodeHandler.ValidateCode)
-	//router.Post("/apply_code/", promocodeHandler.ApplyCode) // TODO create handler
-
-	//// строгая аутентификация (токен обязателен)
-	router.Group(func(r chi.Router) {
-		r.Use(auth.Middleware(false))
-		r.Get("/secure/valid_code/{promocode}", promocodeHandler.ValidateCode)
-	})
+	// APP /promocode/ //
+	// /valid code
+	validCodeUseCase := valid_code.NewUseCase(postgresRepo)
+	validCodeHandler := valid_code.NewHandler(validCodeUseCase)
+	// /apply code
+	applyCodeUseCase := apply_code.NewUseCase(postgresRepo)     // todo
+	applyCodeHandler := apply_code.NewHandler(applyCodeUseCase) // todo
+	// router
+	controllers.PromocodesRouter(router, validCodeHandler, applyCodeHandler) // todo
 
 	log.Println("Server start on :8080 ...")
 	http.ListenAndServe(":8080", router)

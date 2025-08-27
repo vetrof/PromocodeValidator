@@ -1,5 +1,5 @@
 ### Applied code
-POST http://localhost:8080/apply_code/
+POST http://localhost:8080/promocode/apply/
 Content-Type: application/json
 
 {

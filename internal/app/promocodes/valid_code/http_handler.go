@@ -18,22 +18,26 @@ func NewHandler(uc *UseCase) *Handler {
 }
 
 func (h *Handler) ValidateCode(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
 	code := chi.URLParam(r, "promocode")
 
-	result, err := h.uc.Validate(ctx, code)
+	result, err := h.uc.Validate(r.Context(), code)
+
+	w.Header().Set("Content-Type", "application/json")
+
+	// If there's an error and the code doesn't exist, use a default output.
 	if err != nil && !result.Exists {
-		http.Error(w, "promocode not found", http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(Output{
+			Code:   code,
+			Exists: false,
+		})
 		return
 	}
 
-	out := Output{
+	// Otherwise, use the result from the use case.
+	_ = json.NewEncoder(w).Encode(Output{
 		Code:    result.Code,
 		Exists:  result.Exists,
 		OnTime:  result.OnTime,
 		Applied: result.Applied,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(out)
+	})
 }

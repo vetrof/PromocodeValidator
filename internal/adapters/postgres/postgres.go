@@ -1,11 +1,9 @@
-package fake
+package postgres
 
 import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
-	"time"
 	"validator/internal/domain"
 )
 
@@ -20,23 +18,14 @@ func NewPgPromoRepo(db *sql.DB) *PgPromoRepo {
 }
 
 func (r *PgPromoRepo) GetByCode(ctx context.Context, code string) (*domain.PromoCode, error) {
-	switch code {
-	case "bob":
-		return &domain.PromoCode{
-			Code:      "bob",
-			ExpiresAt: time.Now().Add(24 * time.Hour),
-			AppliedAt: nil,
-		}, nil
-	case "alice":
-		applied := time.Now().Add(-2 * time.Hour)
-		return &domain.PromoCode{
-			Code:      "alice",
-			ExpiresAt: time.Now().Add(24 * time.Hour),
-			AppliedAt: &applied,
-		}, nil
-	default:
-		return nil, fmt.Errorf("promo code not found")
+	row := r.db.QueryRowContext(ctx, `SELECT code, expires_at, applied_at FROM promo_codes WHERE code=$1`, code)
+
+	var promo domain.PromoCode
+	err := row.Scan(&promo.Code, &promo.ExpiresAt, &promo.AppliedAt)
+	if err != nil {
+		return nil, err
 	}
+	return &promo, nil
 }
 
 func (r *PgPromoRepo) MarkUsed(ctx context.Context, code string) error {

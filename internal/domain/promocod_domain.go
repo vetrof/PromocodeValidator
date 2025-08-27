@@ -33,14 +33,14 @@ func NewValidationResult(promo *PromoCode, now time.Time) ValidationResult {
 		return ValidationResult{Exists: false}
 	}
 	return ValidationResult{
-		Code:       promo.Code,
-		Exists:     true,
-		OnTime:     promo.IsOnTime(now),
-		Applied:    promo.IsApplied(),
-		AppliedNow: promo.AppliedNow(now),
+		Code:    promo.Code,
+		Exists:  true,
+		OnTime:  promo.IsOnTime(now),
+		Applied: promo.IsApplied(),
+		//AppliedNow: promo.AppliedNow(now),
 	}
 }
 
-func (p *PromoCode) AppliedNow(now time.Time) bool {
-	return p.IsApplied() && p.AppliedAt != nil && p.AppliedAt.After(now.Add(-5*time.Minute))
+func (p *PromoCode) Apply(now time.Time) {
+	p.AppliedAt = &now
 }

@@ -26,5 +26,6 @@ func (u *UseCase) Validate(ctx context.Context, code string) (domain.ValidationR
 		// если не нашли — Exists=false
 		return domain.NewValidationResult(nil, time.Now()), err
 	}
+
 	return domain.NewValidationResult(promo, time.Now()), nil
 }

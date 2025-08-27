@@ -1,12 +1,12 @@
 package apply_code
 
-type PromocodeInput struct {
+type Input struct {
 	Code  string `json:"code"`
 	Name  string `json:"name"`
 	Phone string `json:"phone"`
 }
 
-type PromocodeOutput struct {
+type Output struct {
 	Code       string `json:"code"`
 	Exists     bool   `json:"exists"`
 	OnTime     bool   `json:"onTime"`
