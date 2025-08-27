@@ -1,8 +1,8 @@
 package controllers
 
 import (
-	"validator/internal/app/promocodes/apply_code"
-	"validator/internal/app/promocodes/valid_code"
+	"validator/internal/app_promocodes/apply_code"
+	"validator/internal/app_promocodes/valid_code"
 
 	"github.com/go-chi/chi/v5"
 )

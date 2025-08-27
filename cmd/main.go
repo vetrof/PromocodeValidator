@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"validator/config"
 	"validator/internal/adapters/postgres/fake"
-	"validator/internal/app/promocodes/apply_code"
-	"validator/internal/app/promocodes/valid_code"
+	apply_code2 "validator/internal/app_promocodes/apply_code"
+	valid_code2 "validator/internal/app_promocodes/valid_code"
 	"validator/internal/controllers"
 	"validator/pkg/token"
 
@@ -40,11 +40,11 @@ func main() {
 
 	// APP /promocode/ //
 	// /valid code
-	validCodeUseCase := valid_code.NewUseCase(postgresRepo)
-	validCodeHandler := valid_code.NewHandler(validCodeUseCase)
+	validCodeUseCase := valid_code2.NewUseCase(postgresRepo)
+	validCodeHandler := valid_code2.NewHandler(validCodeUseCase)
 	// /apply code
-	applyCodeUseCase := apply_code.NewUseCase(postgresRepo)     // todo
-	applyCodeHandler := apply_code.NewHandler(applyCodeUseCase) // todo
+	applyCodeUseCase := apply_code2.NewUseCase(postgresRepo)     // todo
+	applyCodeHandler := apply_code2.NewHandler(applyCodeUseCase) // todo
 	// router
 	controllers.PromocodesRouter(router, validCodeHandler, applyCodeHandler) // todo
 
