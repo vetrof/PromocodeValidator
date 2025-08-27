@@ -1,12 +1,13 @@
+// todo Дописать регистрацию промокода
+
 package main
 
 import (
 	"log"
 	"net/http"
 	"validator/config"
-	"validator/internal/promocode/adapters/fake"
-	"validator/internal/promocode/controllers"
-	"validator/internal/promocode/usecase"
+	"validator/internal/adapters/fake"
+	"validator/internal/promocodes/valid_code"
 	"validator/pkg/middleware"
 	"validator/pkg/postgres"
 	"validator/pkg/token"
@@ -38,14 +39,15 @@ func main() {
 	// юзкейсы и хендлеры
 	//promocodeRepo := adapters.NewPgPromoRepo(db)
 	promocodeRepo := fake.NewPgPromoRepo(db)
-	promocodeUc := usecase.New(promocodeRepo)
-	promocodeHandler := controllers.New(promocodeUc)
+	promocodeUc := valid_code.NewUseCase(promocodeRepo)
+	promocodeHandler := valid_code.NewHandler(promocodeUc)
 
 	// эндпоинт для получения токена
 	router.Post("/login", tokenHandler.Login)
 
 	// публичные эндпоинты
 	router.Get("/valid_code/{promocode}", promocodeHandler.ValidateCode)
+	//router.Post("/apply_code/", promocodeHandler.ApplyCode) // TODO create handler
 
 	//// строгая аутентификация (токен обязателен)
 	router.Group(func(r chi.Router) {

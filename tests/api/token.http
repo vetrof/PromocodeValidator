@@ -14,9 +14,10 @@ Content-Type: application/json
     client.global.set("authToken", data.token);  // предполагаем, что сервер вернул { "token": "..." }
 %}
 
-### 2. Защищённый запрос с токеном
-GET http://localhost:8080/strong_auth/
-Authorization: Bearer {{authToken}}
+
+### 3. Защищённый запрос с токеном
+GET http://localhost:8080/secure/valid_code/bob1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlcyI6WyJhZG1pbiJdLCJzdWIiOiIxMjMiLCJhdWQiOlsiIl0sImV4cCI6MTc1NjI3MDU1Mn0.VfTdMBbeB0yOxXju6tqLgKW6AQESkjflB1VpavcEZ7U
 
 > {%
     client.test("Protected endpoint returns 200", function() {

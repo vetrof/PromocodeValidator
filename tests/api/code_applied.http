@@ -1,0 +1,18 @@
+### Applied code
+POST http://localhost:8080/apply_code/
+Content-Type: application/json
+
+{
+  "code": "bob",
+  "name": "nik",
+  "phone": "777"
+}
+
+
+> {%
+    client.test("Valid promo code should return 200", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        // client.assert(response.body.code === "bob", "Code should be 'bob'");
+        // client.assert(response.body.valid === true, "valid should be 'true'");
+    });
+%}
